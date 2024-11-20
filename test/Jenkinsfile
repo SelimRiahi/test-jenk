@@ -1,46 +1,40 @@
 pipeline {
     agent any
+
     environment {
-        // Replace with the Jenkins credentials ID that stores the DockerHub token securely
-        DOCKERHUB_USERNAME = 'selimrh125'  // Your DockerHub username
-        DOCKERHUB_TOKEN = credentials('dockerhub-token') // Reference the Jenkins stored token
-        IMAGE_NAME = 'selimrh125/myimage' // Replace with the name of your Docker image
-        PORT = '97'  // Port for the application
+        DOCKERHUB_TOKEN = credentials('dockerhub-credentials')  // Token for DockerHub
+        GITHUB_TOKEN = credentials('github-token')  // Token for GitHub
     }
+
     stages {
-        stage('Clone repository') {
+        stage('Checkout SCM') {
             steps {
                 script {
-                    // Clone the GitHub repository from the 'test' folder in the 'main' branch
-                    git branch: 'main', url: 'https://github.com/SelimRiahi/test-jenk.git'
-                    sh 'ls -la'  // List files to confirm we are in the right directory
+                    // Checkout the code from the GitHub repository
+                    git url: 'https://github.com/SelimRiahi/test-jenk.git', branch: 'main', credentialsId: 'github-token'
                 }
             }
         }
-        stage('Build Docker image') {
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Navigate to the 'test' directory and build the Docker image
+                    // Navigate to the 'test' folder where your static API is located
                     dir('test') {
-                        sh 'docker build -t $IMAGE_NAME .'
+                        // Build the Docker image for the static API
+                        sh 'docker build -t selimrh125/static-api .'
                     }
                 }
             }
         }
-        stage('Run Docker container') {
+
+        stage('Push Docker Image to DockerHub') {
             steps {
                 script {
-                    // Run the Docker container on port 97
-                    sh "docker run -d -p $PORT:97 $IMAGE_NAME"
-                }
-            }
-        }
-        stage('Push Docker image to DockerHub') {
-            steps {
-                script {
-                    // Log in to DockerHub and push the image
-                    sh "echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin"
-                    sh "docker push $IMAGE_NAME"
+                    // Login to DockerHub using the provided credentials
+                    sh "echo ${DOCKERHUB_TOKEN} | docker login --username selimrh125 --password-stdin"
+                    // Push the Docker image to DockerHub
+                    sh 'docker push selimrh125/static-api'
                 }
             }
         }

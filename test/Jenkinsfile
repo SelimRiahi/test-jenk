@@ -2,52 +2,35 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_NAME = 'myimage'  // Define your Docker image name
-        DOCKER_REPO = 'docker.io'     // Docker registry URL
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        GITHUB_CREDENTIALS = credentials('github-token')
     }
 
     stages {
-        stage('Checkout GitHub Repository') {
+        stage('Clone Repository') {
             steps {
-                script {
-                    // Clone the Git repository using GitHub credentials stored in Jenkins
-                    checkout scm
-                }
+                git credentialsId: 'github-token', url: 'https://github.com/SelimRiahi/test-jenk.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image
-                    sh 'docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME} .'
+                    dir('test') {
+                        sh 'docker build -t selimrh125/static-api:latest .'
+                    }
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
-                                                  usernameVariable: 'DOCKER_USERNAME', 
-                                                  passwordVariable: 'DOCKER_PASSWORD')]) {
-                    script {
-                        // Log in to Docker Hub
-                        sh """
-                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                        docker push \$DOCKER_REPO/\$DOCKER_USERNAME/\$DOCKER_IMAGE_NAME
-                        """
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        sh 'docker push selimrh125/static-api:latest'
                     }
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo 'Docker image was successfully built and pushed to Docker Hub!'
-        }
-        failure {
-            echo 'Pipeline failed, check the logs for details.'
         }
     }
 }

@@ -2,50 +2,52 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REGISTRY = 'docker.io'
-        DOCKER_IMAGE = 'myimage'  // Replace with your desired image name
+        DOCKER_IMAGE_NAME = 'myimage'  // Define your Docker image name
+        DOCKER_REPO = 'docker.io'     // Docker registry URL
     }
 
     stages {
         stage('Checkout GitHub Repository') {
             steps {
-                checkout scm
+                script {
+                    // Clone the Git repository using GitHub credentials stored in Jenkins
+                    checkout scm
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                dir('test') {  // Make sure 'test' is the correct directory where your Dockerfile is
-                    script {
-                        // Build the Docker image
-                        bat "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE} ."
-                    }
+                script {
+                    // Build the Docker image
+                    sh 'docker build -t ${DOCKER_REPO}/${DOCKER_IMAGE_NAME} .'
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
+                                                  usernameVariable: 'DOCKER_USERNAME', 
+                                                  passwordVariable: 'DOCKER_PASSWORD')]) {
                     script {
-                        // Docker login using the token stored in Jenkins credentials
-                        bat """
-                            echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        // Log in to Docker Hub
+                        sh """
+                        echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                        docker push \$DOCKER_REPO/\$DOCKER_USERNAME/\$DOCKER_IMAGE_NAME
                         """
                     }
-                }
-
-                script {
-                    // Push the Docker image to Docker Hub
-                    bat "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}"
                 }
             }
         }
     }
 
     post {
-        always {
-            cleanWs()  // Clean up workspace after execution
+        success {
+            echo 'Docker image was successfully built and pushed to Docker Hub!'
+        }
+        failure {
+            echo 'Pipeline failed, check the logs for details.'
         }
     }
 }

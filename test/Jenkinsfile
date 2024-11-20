@@ -1,42 +1,63 @@
 pipeline {
     agent any
-
+    
     environment {
-        DOCKERHUB_TOKEN = credentials('dockerhub-credentials')  // Token for DockerHub
-        GITHUB_TOKEN = credentials('github-token')  // Token for GitHub
+        // Define environment variables for credentials and image names
+        DOCKER_IMAGE = 'myimage'
+        GITHUB_REPO = 'https://github.com/SelimRiahi/test-jenk'
+        DOCKER_REGISTRY = 'docker.io'
+        DOCKER_CREDENTIALS = 'dockerhub-credentials'  // Replace with your Jenkins DockerHub credentials ID
+        GITHUB_CREDENTIALS = 'github-token'  // Replace with your GitHub credentials ID
     }
-
+    
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout GitHub Repo') {
             steps {
                 script {
-                    // Checkout the code from the GitHub repository
-                    git url: 'https://github.com/SelimRiahi/test-jenk.git', branch: 'main', credentialsId: 'github-token'
+                    // Checkout GitHub repository
+                    checkout scm
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    // Navigate to the 'test' folder where your static API is located
-                    dir('test') {
-                        // Build the Docker image for the static API
-                        sh 'docker build -t selimrh125/static-api .'
-                    }
+                dir('test') {
+                    // Build Docker image using bat command for Windows
+                    bat 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE} .'
                 }
             }
         }
 
-        stage('Push Docker Image to DockerHub') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    // Login to DockerHub using the provided credentials
-                    sh "echo ${DOCKERHUB_TOKEN} | docker login --username selimrh125 --password-stdin"
-                    // Push the Docker image to DockerHub
-                    sh 'docker push selimrh125/static-api'
+                    // Log in to DockerHub using credentials
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        bat """
+                            echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin
+                        """
+                    }
+                    
+                    // Push Docker image to DockerHub
+                    bat 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}'
                 }
             }
+        }
+
+        stage('Clean Up') {
+            steps {
+                // Clean up Docker images to save space
+                bat 'docker system prune -f'
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Archive the build logs or other artifacts if necessary
+            archiveArtifacts allowEmptyArchive: true, artifacts: '**/*.log'
+            cleanWs()  // Clean workspace after build
         }
     }
 }

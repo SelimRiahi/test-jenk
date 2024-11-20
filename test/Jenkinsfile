@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+    environment {
+        // Replace with the Jenkins credentials ID that stores the DockerHub token securely
+        DOCKERHUB_USERNAME = 'selimrh125'  // Your DockerHub username
+        DOCKERHUB_TOKEN = credentials('dockerhub-token') // Reference the Jenkins stored token
+        IMAGE_NAME = 'selimrh125/myimage' // Replace with the name of your Docker image
+        PORT = '97'  // Port for the application
+    }
+    stages {
+        stage('Clone repository') {
+            steps {
+                script {
+                    // Clone the GitHub repository from the 'test' folder in the 'main' branch
+                    git branch: 'main', url: 'https://github.com/SelimRiahi/test-jenk.git'
+                    sh 'ls -la'  // List files to confirm we are in the right directory
+                }
+            }
+        }
+        stage('Build Docker image') {
+            steps {
+                script {
+                    // Navigate to the 'test' directory and build the Docker image
+                    dir('test') {
+                        sh 'docker build -t $IMAGE_NAME .'
+                    }
+                }
+            }
+        }
+        stage('Run Docker container') {
+            steps {
+                script {
+                    // Run the Docker container on port 97
+                    sh "docker run -d -p $PORT:97 $IMAGE_NAME"
+                }
+            }
+        }
+        stage('Push Docker image to DockerHub') {
+            steps {
+                script {
+                    // Log in to DockerHub and push the image
+                    sh "echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin"
+                    sh "docker push $IMAGE_NAME"
+                }
+            }
+        }
+    }
+}

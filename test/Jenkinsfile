@@ -22,6 +22,13 @@ pipeline {
                 }
             }
         }
+        stage('Run Docker Container') {
+            steps {
+                script {
+                    bat 'docker run -d -p 3000:3000 --name static-api selimrh125/static-api:latest'
+                }
+            }
+        }
 
         stage('Push Docker Image') {
             steps {

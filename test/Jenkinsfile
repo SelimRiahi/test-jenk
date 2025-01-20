@@ -5,8 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         GITHUB_CREDENTIALS = credentials('github-token')
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
-        NEXUS_URL = 'localhost:8081'
-        NEXUS_REPOSITORY = 'repository/docker-hosted'
+        NEXUS_URL = 'localhost:8081/repository/docker-hosted'
     }
 
     stages {
@@ -45,7 +44,7 @@ pipeline {
         stage('Tag Docker Image for Nexus') {
             steps {
                 script {
-                    bat "docker tag selimrh125/static-api:latest ${NEXUS_URL}/${NEXUS_REPOSITORY}/static-api:latest"
+                    bat "docker tag selimrh125/static-api:latest ${NEXUS_URL}/static-api:latest"
                 }
             }
         }
@@ -55,7 +54,7 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', passwordVariable: 'NEXUS_PASSWORD', usernameVariable: 'NEXUS_USERNAME')]) {
                         bat "echo ${NEXUS_PASSWORD} | docker login -u ${NEXUS_USERNAME} --password-stdin ${NEXUS_URL}"
-                        bat "docker push ${NEXUS_URL}/${NEXUS_REPOSITORY}/static-api:latest"
+                        bat "docker push ${NEXUS_URL}/static-api:latest"
                     }
                 }
             }

@@ -26,6 +26,14 @@ pipeline {
             }
         }
 
+        stage('Remove Existing Docker Container') {
+            steps {
+                script {
+                    bat 'docker rm -f static-api || echo "No existing container to remove"'
+                }
+            }
+        }
+
         stage('Run Docker Container') {
             steps {
                 script {

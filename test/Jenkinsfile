@@ -2,9 +2,12 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS  = credentials('github-token')
-        NEXUS_DOCKER_CRED   = credentials('nexus-docker-credentials')
-        NEXUS_DOCKER_REPO   = 'localhost:5000/docker-hosted'
+        GITHUB_CREDENTIALS    = credentials('github-token')
+        NEXUS_DOCKER_CRED     = credentials('nexus-docker-credentials')
+        NEXUS_REGISTRY        = 'localhost:5000'
+        REPOSITORY_NAME       = 'docker-hosted'
+        // Construct the full image name
+        IMAGE_NAME            = "${NEXUS_REGISTRY}/${REPOSITORY_NAME}/static-api:latest"
     }
 
     stages {
@@ -18,8 +21,8 @@ pipeline {
             steps {
                 script {
                     dir('test') {
-                        // Build and tag the image for Nexus
-                        bat 'docker build -t %NEXUS_DOCKER_REPO%/static-api:latest .'
+                        // Build and tag the image using the full image name.
+                        bat "docker build -t %NEXUS_REGISTRY%/%REPOSITORY_NAME%/static-api:latest ."
                     }
                 }
             }
@@ -33,7 +36,7 @@ pipeline {
                         docker rm -f static-api || echo "No existing container to remove"
                     '''
                     // Run the new container
-                    bat 'docker run -d -p 3000:3000 --name static-api %NEXUS_DOCKER_REPO%/static-api:latest'
+                    bat "docker run -d -p 3000:3000 --name static-api %NEXUS_REGISTRY%/%REPOSITORY_NAME%/static-api:latest"
                 }
             }
         }
@@ -41,10 +44,10 @@ pipeline {
         stage('Push Docker Image to Nexus') {
             steps {
                 script {
-                    // Log in to Nexus Docker repository
-                    bat 'docker login %NEXUS_DOCKER_REPO% -u %NEXUS_DOCKER_CRED_USR% -p %NEXUS_DOCKER_CRED_PSW%'
+                    // Login only to the registry host, not the full repository path.
+                    bat "docker login %NEXUS_REGISTRY% -u %NEXUS_DOCKER_CRED_USR% -p %NEXUS_DOCKER_CRED_PSW%"
                     // Push the image to Nexus
-                    bat 'docker push %NEXUS_DOCKER_REPO%/static-api:latest'
+                    bat "docker push %NEXUS_REGISTRY%/%REPOSITORY_NAME%/static-api:latest"
                 }
             }
         }

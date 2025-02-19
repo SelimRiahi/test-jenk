@@ -2,12 +2,8 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS    = credentials('github-token')
-        NEXUS_DOCKER_CRED     = credentials('nexus-docker-credentials')
-        NEXUS_REGISTRY        = 'localhost:5000'
-        REPOSITORY_NAME       = 'docker-hosted'
-        // Construct the full image name
-        IMAGE_NAME            = "${NEXUS_REGISTRY}/${REPOSITORY_NAME}/static-api:latest"
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        GITHUB_CREDENTIALS = credentials('github-token')
     }
 
     stages {
@@ -21,36 +17,27 @@ pipeline {
             steps {
                 script {
                     dir('test') {
-                        // Build and tag the image using the full image name.
-                        bat "docker build -t %NEXUS_REGISTRY%/%REPOSITORY_NAME%/static-api:latest ."
+                        bat 'docker build -t selimrh125/static-api:latest .'
                     }
                 }
             }
         }
-
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Remove any existing container named "static-api"
-                    bat '''
-                        docker rm -f static-api || echo "No existing container to remove"
-                    '''
-                    // Run the new container
-                    bat "docker run -d -p 3000:3000 --name static-api %NEXUS_REGISTRY%/%REPOSITORY_NAME%/static-api:latest"
+                    bat 'docker run -d -p 3000:3000 --name static-api selimrh125/static-api:latest'
                 }
             }
         }
 
-        stage('Push Docker Image to Nexus') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    // Login only to the registry host, not the full repository path.
-                    bat "docker login %NEXUS_REGISTRY% -u %NEXUS_DOCKER_CRED_USR% -p %NEXUS_DOCKER_CRED_PSW%"
-                    // Push the image to Nexus
-                    bat "docker push %NEXUS_REGISTRY%/%REPOSITORY_NAME%/static-api:latest"
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        bat 'docker push selimrh125/static-api:latest'
+                    }
                 }
             }
         }
     }
 }
-

@@ -2,11 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         GITHUB_CREDENTIALS  = credentials('github-token')
         NEXUS_DOCKER_CRED   = credentials('nexus-docker-credentials')
-        // Adjust this URL to your Nexus Docker hosted repo (e.g., "localhost:8081" might change to your actual host/port)
-        NEXUS_DOCKER_REPO   = 'localhost:8081/repository/docker-hosted'
+        NEXUS_DOCKER_REPO   = 'localhost:5000/docker-hosted'
     }
 
     stages {
@@ -19,9 +17,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Change directory if necessary (here "test" folder)
                     dir('test') {
-                        // Tag image with your Nexus repository URL
+                        // Build and tag the image with the Nexus repository URL
                         bat 'docker build -t %NEXUS_DOCKER_REPO%/static-api:latest .'
                     }
                 }
@@ -31,7 +28,6 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Running the container (from the local image built)
                     bat 'docker run -d -p 3000:3000 --name static-api %NEXUS_DOCKER_REPO%/static-api:latest'
                 }
             }
@@ -40,10 +36,9 @@ pipeline {
         stage('Push Docker Image to Nexus') {
             steps {
                 script {
-                    // Login to your Nexus Docker registry using credentials from Jenkins.
-                    // Note: In Windows bat scripts, environment variables are referenced with %VAR%
+                    // Login to Nexus Docker registry
                     bat 'docker login %NEXUS_DOCKER_REPO% -u %NEXUS_DOCKER_CRED_USR% -p %NEXUS_DOCKER_CRED_PSW%'
-                    // Push the image to Nexus
+                    // Push image to Nexus
                     bat 'docker push %NEXUS_DOCKER_REPO%/static-api:latest'
                 }
             }

@@ -18,7 +18,7 @@ pipeline {
             steps {
                 script {
                     dir('test') {
-                        // Build and tag the image with the Nexus repository URL
+                        // Build and tag the image for Nexus
                         bat 'docker build -t %NEXUS_DOCKER_REPO%/static-api:latest .'
                     }
                 }
@@ -28,6 +28,11 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
+                    // Remove any existing container named "static-api"
+                    bat '''
+                        docker rm -f static-api || echo "No existing container to remove"
+                    '''
+                    // Run the new container
                     bat 'docker run -d -p 3000:3000 --name static-api %NEXUS_DOCKER_REPO%/static-api:latest'
                 }
             }
@@ -36,9 +41,9 @@ pipeline {
         stage('Push Docker Image to Nexus') {
             steps {
                 script {
-                    // Login to Nexus Docker registry
+                    // Log in to Nexus Docker repository
                     bat 'docker login %NEXUS_DOCKER_REPO% -u %NEXUS_DOCKER_CRED_USR% -p %NEXUS_DOCKER_CRED_PSW%'
-                    // Push image to Nexus
+                    // Push the image to Nexus
                     bat 'docker push %NEXUS_DOCKER_REPO%/static-api:latest'
                 }
             }

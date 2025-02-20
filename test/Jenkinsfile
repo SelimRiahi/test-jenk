@@ -5,6 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
         GITHUB_CREDENTIALS = credentials('github-token')
+        KUBECONFIG = credentials('kubeconfig') // Add kubeconfig credentials in Jenkins
     }
 
     stages {
@@ -72,6 +73,15 @@ pipeline {
 
                     // Run the container using the original image tag
                     bat 'docker run -d -p 3000:3000 --name static-api selimrh125/static-api:latest'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Apply the Kubernetes manifest
+                    bat 'kubectl apply -f deployment.yaml'
                 }
             }
         }

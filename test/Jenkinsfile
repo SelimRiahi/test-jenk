@@ -52,6 +52,9 @@ pipeline {
 
                     // Push the image to Nexus
                     bat 'docker push localhost:8051/docker-hosted/selimrh125/static-api:latest'
+
+                    // Remove the localhost tag after pushing to Nexus
+                    bat 'docker rmi localhost:8051/docker-hosted/selimrh125/static-api:latest'
                 }
             }
         }

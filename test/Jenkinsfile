@@ -73,6 +73,7 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
+                    // Run the container using the original image tag
                     bat 'docker run -d -p 3000:3000 --name static-api selimrh125/static-api:latest'
                 }
             }

@@ -22,13 +22,20 @@ pipeline {
                         catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                             bat '''
                                 docker image inspect selimrh125/static-api:latest > nul 2>&1 && docker rmi selimrh125/static-api:latest || echo "Image does not exist"
-                                docker image inspect localhost:8051/docker-hosted/selimrh125/static-api:latest > nul 2>&1 && docker rmi localhost:8051/docker-hosted/selimrh125/static-api:latest || echo "Image does not exist"
                             '''
                         }
                         // Build the new Docker image
                         bat 'docker build -t selimrh125/static-api:latest .'
-                        bat 'docker tag selimrh125/static-api:latest localhost:8051/docker-hosted/selimrh125/static-api:latest'
                     }
+                }
+            }
+        }
+
+        stage('Tag Docker Image for Nexus') {
+            steps {
+                script {
+                    // Tag the Docker image for Nexus
+                    bat 'docker tag selimrh125/static-api:latest localhost:8051/docker-hosted/selimrh125/static-api:latest'
                 }
             }
         }

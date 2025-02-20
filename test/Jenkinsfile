@@ -31,15 +31,6 @@ pipeline {
             }
         }
 
-        stage('Tag Docker Image for Nexus') {
-            steps {
-                script {
-                    // Tag the Docker image for Nexus
-                    bat 'docker tag selimrh125/static-api:latest localhost:8051/docker-hosted/selimrh125/static-api:latest'
-                }
-            }
-        }
-
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
@@ -53,6 +44,9 @@ pipeline {
         stage('Push Docker Image to Nexus') {
             steps {
                 script {
+                    // Tag the existing Docker image for Nexus
+                    bat 'docker tag selimrh125/static-api:latest localhost:8051/docker-hosted/selimrh125/static-api:latest'
+                    
                     // Log in to Nexus Docker registry
                     bat "docker login -u ${NEXUS_CREDENTIALS_USR} -p ${NEXUS_CREDENTIALS_PSW} localhost:8051"
 

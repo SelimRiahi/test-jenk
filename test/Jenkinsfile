@@ -20,9 +20,10 @@ pipeline {
                     dir('test') {
                         // Check if the Docker image exists and delete it
                         bat '''
-                            if docker image inspect selimrh125/static-api:latest > nul 2>&1; then
+                            docker image inspect selimrh125/static-api:latest > nul 2>&1
+                            if %ERRORLEVEL% EQU 0 (
                                 docker rmi selimrh125/static-api:latest
-                            fi
+                            )
                         '''
                         // Build the new Docker image
                         bat 'docker build -t selimrh125/static-api:latest .'
@@ -64,10 +65,11 @@ pipeline {
                 script {
                     // Stop and remove the container if it exists
                     bat '''
-                        if docker ps -a --format '{{.Names}}' | grep -Eq "^static-api\$"; then
+                        docker ps -a --format "{{.Names}}" | findstr /r "^static-api$" > nul
+                        if %ERRORLEVEL% EQU 0 (
                             docker stop static-api
                             docker rm static-api
-                        fi
+                        )
                     '''
                 }
             }

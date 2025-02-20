@@ -18,6 +18,10 @@ pipeline {
             steps {
                 script {
                     dir('test') {
+                        // Stop and remove any running containers using the image
+                        bat '''
+                            for /f "tokens=*" %i in ('docker ps -a -q --filter ancestor=selimrh125/static-api:latest') do docker stop %i && docker rm %i
+                        '''
                         // Check if the Docker image exists and delete it
                         bat '''
                             docker image inspect selimrh125/static-api:latest > nul 2>&1

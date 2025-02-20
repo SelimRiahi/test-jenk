@@ -18,20 +18,12 @@ pipeline {
             steps {
                 script {
                     dir('test') {
-                        // Stop and remove any running containers using the image
-                        bat '''
-                            for /f "tokens=*" %i in ('docker ps -a -q --filter ancestor=selimrh125/static-api:latest') do (
-                                docker stop %i
-                                docker rm %i
-                            )
-                        '''
                         // Check if the Docker image exists and delete it
-                        bat '''
-                            docker image inspect selimrh125/static-api:latest > nul 2>&1
-                            if %ERRORLEVEL% EQU 0 (
-                                docker rmi selimrh125/static-api:latest
-                            )
-                        '''
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                            bat '''
+                                docker image inspect selimrh125/static-api:latest > nul 2>&1 && docker rmi selimrh125/static-api:latest || echo "Image does not exist"
+                            '''
+                        }
                         // Build the new Docker image
                         bat 'docker build -t selimrh125/static-api:latest .'
                     }
@@ -71,13 +63,12 @@ pipeline {
             steps {
                 script {
                     // Stop and remove the container if it exists
-                    bat '''
-                        docker ps -a --format "{{.Names}}" | findstr /r "^static-api$" > nul
-                        if %ERRORLEVEL% EQU 0 (
-                            docker stop static-api
-                            docker rm static-api
-                        )
-                    '''
+                    catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                        bat '''
+                            docker stop static-api || echo "Container does not exist"
+                            docker rm static-api || echo "Container does not exist"
+                        '''
+                    }
                 }
             }
         }

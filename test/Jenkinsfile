@@ -18,6 +18,14 @@ pipeline {
             steps {
                 script {
                     dir('test') {
+                        // Check if the Docker image exists and delete it
+                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                            bat '''
+                                docker image inspect selimrh125/static-api:latest > nul 2>&1 && docker rmi selimrh125/static-api:latest || echo "Image does not exist"
+                                docker image inspect localhost:8051/docker-hosted/selimrh125/static-api:latest > nul 2>&1 && docker rmi localhost:8051/docker-hosted/selimrh125/static-api:latest || echo "Image does not exist"
+                            '''
+                        }
+                        // Build the new Docker image
                         bat 'docker build -t selimrh125/static-api:latest .'
                         bat 'docker tag selimrh125/static-api:latest localhost:8051/docker-hosted/selimrh125/static-api:latest'
                     }

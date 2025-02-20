@@ -19,11 +19,11 @@ pipeline {
                 script {
                     dir('test') {
                         // Check if the Docker image exists and delete it
-                        catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                            bat '''
-                                docker image inspect selimrh125/static-api:latest > nul 2>&1 && docker rmi selimrh125/static-api:latest || echo "Image does not exist"
-                            '''
-                        }
+                        bat '''
+                            if docker image inspect selimrh125/static-api:latest > nul 2>&1; then
+                                docker rmi selimrh125/static-api:latest
+                            fi
+                        '''
                         // Build the new Docker image
                         bat 'docker build -t selimrh125/static-api:latest .'
                     }
@@ -63,12 +63,12 @@ pipeline {
             steps {
                 script {
                     // Stop and remove the container if it exists
-                    catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                        bat '''
-                            docker stop static-api || echo "Container does not exist"
-                            docker rm static-api || echo "Container does not exist"
-                        '''
-                    }
+                    bat '''
+                        if docker ps -a --format '{{.Names}}' | grep -Eq "^static-api\$"; then
+                            docker stop static-api
+                            docker rm static-api
+                        fi
+                    '''
                 }
             }
         }

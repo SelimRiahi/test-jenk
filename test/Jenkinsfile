@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        NEXUS_CREDENTIALS = credentials('nexus-credentials') // Add Nexus credentials in Jenkins
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        NEXUS_CREDENTIALS = credentials('nexus-credentials')
+        GITHUB_CREDENTIALS = credentials('github-token')
     }
 
     stages {
@@ -16,8 +18,31 @@ pipeline {
             steps {
                 script {
                     dir('test') {
-                        bat 'docker build -t localhost:8051/docker-hosted/selimrh125/static-api:latest .'
+                        bat 'docker build -t selimrh125/static-api:latest .'
+                        bat 'docker tag selimrh125/static-api:latest localhost:8051/docker-hosted/selimrh125/static-api:latest'
                     }
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        bat 'docker push selimrh125/static-api:latest'
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image to Nexus') {
+            steps {
+                script {
+                    // Log in to Nexus Docker registry
+                    bat "docker login -u ${NEXUS_CREDENTIALS_USR} -p ${NEXUS_CREDENTIALS_PSW} localhost:8051"
+
+                    // Push the image to Nexus
+                    bat 'docker push localhost:8051/docker-hosted/selimrh125/static-api:latest'
                 }
             }
         }
@@ -40,18 +65,6 @@ pipeline {
             steps {
                 script {
                     bat 'docker run -d -p 3000:3000 --name static-api localhost:8051/docker-hosted/selimrh125/static-api:latest'
-                }
-            }
-        }
-
-        stage('Push Docker Image to Nexus') {
-            steps {
-                script {
-                    // Log in to Nexus Docker registry
-                    bat "docker login -u ${NEXUS_CREDENTIALS_USR} -p ${NEXUS_CREDENTIALS_PSW} localhost:8051"
-
-                    // Push the image to Nexus
-                    bat 'docker push localhost:8051/docker-hosted/selimrh125/static-api:latest'
                 }
             }
         }

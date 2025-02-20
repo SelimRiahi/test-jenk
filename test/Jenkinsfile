@@ -26,10 +26,12 @@ pipeline {
             steps {
                 script {
                     // Stop and remove the container if it exists
-                    bat '''
-                        docker stop static-api || echo "Container does not exist" || true
-                        docker rm static-api || echo "Container does not exist" || true
-                    '''
+                    catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                        bat '''
+                            docker stop static-api || echo "Container does not exist"
+                            docker rm static-api || echo "Container does not exist"
+                        '''
+                    }
                 }
             }
         }

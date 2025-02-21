@@ -5,7 +5,6 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         NEXUS_CREDENTIALS = credentials('nexus-credentials')
         GITHUB_CREDENTIALS = credentials('github-token')
-        KUBECONFIG = credentials('kubeconfig') // Add kubeconfig credentials in Jenkins
     }
 
     stages {
@@ -79,9 +78,11 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    // Apply the Kubernetes manifest
-                    bat 'kubectl apply -f deployment.yaml'
+                withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG')]) {
+                    script {
+                        // Apply the Kubernetes manifest
+                        bat 'kubectl apply -f deployment.yaml'
+                    }
                 }
             }
         }

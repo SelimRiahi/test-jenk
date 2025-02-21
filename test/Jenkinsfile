@@ -80,8 +80,10 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG')]) {
                     script {
-                        // Apply the Kubernetes manifest
-                        bat 'kubectl apply -f deployment.yaml'
+                        dir('test') {
+                            // Apply the Kubernetes manifest
+                            bat 'kubectl apply -f deployment.yaml'
+                        }
                     }
                 }
             }

@@ -27,9 +27,10 @@ metadata:
   labels:
     app: static-api
 spec:
-  type: LoadBalancer
+  type: NodePort
   ports:
     - port: 3000
       targetPort: 3000
+      nodePort: 32000  # Specify a node port
   selector:
     app: static-api
